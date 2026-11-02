@@ -1,0 +1,7 @@
+{
+  "uuid": "claude-usage@desconnets.fr",
+  "name": "Claude Usage",
+  "description": "Affiche l'utilisation des limites Claude (session 5h, hebdomadaire) dans la barre du haut, avec le rythme de consommation par rapport au temps écoulé. Lit le jeton OAuth local de Claude Code (~/.claude/.credentials.json) et interroge api.anthropic.com.",
+  "url": "https://github.com/SLMitch/claude-usage-gnome-extension",
+  "shell-version": ["48", "49", "50"]
+}

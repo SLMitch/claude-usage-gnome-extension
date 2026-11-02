@@ -1,0 +1,15 @@
+.claude-usage-label { padding: 0 4px; }
+.claude-usage-warn { color: #f6d32d; }
+.claude-usage-crit { color: #ff7b63; }
+.claude-usage-row { spacing: 4px; min-width: 260px; }
+.claude-usage-title { font-weight: bold; }
+.claude-usage-sub { font-size: 0.85em; color: #aaaaaa; }
+.claude-usage-bar-bg { height: 6px; border-radius: 3px; background-color: rgba(255,255,255,0.15); }
+.claude-usage-bar { height: 6px; border-radius: 3px; background-color: #d97757; }
+.claude-usage-bar.warn { background-color: #f6d32d; }
+.claude-usage-bar.crit { background-color: #e01b24; }
+.claude-usage-marker { height: 10px; background-color: #ffffff; }
+.claude-usage-pace { font-size: 0.8em; padding-left: 3px; }
+.claude-usage-pace.ok, .claude-usage-sub.ok { color: #57e389; }
+.claude-usage-pace.warn, .claude-usage-sub.warn { color: #ffa348; }
+.claude-usage-pace.crit, .claude-usage-sub.crit { color: #ff7b63; }
