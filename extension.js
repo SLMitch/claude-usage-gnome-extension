@@ -12,6 +12,9 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
 const REFRESH_SECONDS = 300;
+// Anti-rebond : ignore les rafraîchissements rapprochés déclenchés par des ouvertures
+// répétées du menu (le bouton « Rafraîchir » et le minuteur passent outre, via `force`).
+const MIN_REFRESH_SECONDS = 30;
 const BAR_WIDTH = 240;
 const SESSION_SECONDS = 5 * 3600;
 const WEEK_SECONDS = 7 * 86400;
@@ -150,7 +153,7 @@ class Indicator extends PanelMenu.Button {
         this._status = new PopupMenu.PopupMenuItem('', {reactive: false});
         this.menu.addMenuItem(this._status);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this.menu.addAction('Rafraîchir', () => this.refresh());
+        this.menu.addAction('Rafraîchir', () => this.refresh(true));
         this.menu.addAction('Ouvrir claude.ai/settings/usage', () =>
             Gio.AppInfo.launch_default_for_uri('https://claude.ai/settings/usage', null));
 
@@ -178,9 +181,13 @@ class Indicator extends PanelMenu.Button {
         return oauth;
     }
 
-    async refresh() {
+    async refresh(force = false) {
         if (this._busy)
             return;
+        const now = GLib.get_monotonic_time() / 1e6;
+        if (!force && this._lastRefresh && now - this._lastRefresh < MIN_REFRESH_SECONDS)
+            return;
+        this._lastRefresh = now;
         this._busy = true;
         try {
             const oauth = this._readToken();
@@ -192,9 +199,14 @@ class Indicator extends PanelMenu.Button {
             msg.request_headers.append('anthropic-beta', 'oauth-2025-04-20');
             msg.request_headers.append('User-Agent', 'claude-usage-gnome/1');
             const bytes = await this._session.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, this._cancellable);
-            const status = msg.get_status();
+            // status_code (entier brut) plutôt que get_status() : ce dernier est marshalé via
+            // l'énum Soup.Status, qui ignore les codes ajoutés après libsoup (429, 451, 529…)
+            // et fait planter GJS avec « N is not a valid value for enumeration Status ».
+            const status = msg.status_code;
             if (status === 401)
                 throw new Error('Non autorisé (401) — lancez claude pour renouveler le token');
+            if (status === 429)
+                throw new Error('Limite de requêtes atteinte (429) — réessayez plus tard');
             if (status !== 200)
                 throw new Error(`HTTP ${status}`);
             this._render(JSON.parse(new TextDecoder().decode(bytes.get_data())));
