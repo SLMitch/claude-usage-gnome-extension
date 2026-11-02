@@ -157,7 +157,7 @@ class Indicator extends PanelMenu.Button {
         this.menu.addAction('Ouvrir claude.ai/settings/usage', () =>
             Gio.AppInfo.launch_default_for_uri('https://claude.ai/settings/usage', null));
 
-        this.menu.connect('open-state-changed', (_m, open) => {
+        this._openStateId = this.menu.connect('open-state-changed', (_m, open) => {
             if (open)
                 this.refresh();
         });
@@ -169,12 +169,16 @@ class Indicator extends PanelMenu.Button {
         });
     }
 
-    _readToken() {
+    async _readToken() {
         // Relu à chaque requête : Claude Code renouvelle le token lui-même.
         const path = GLib.build_filenamev([GLib.get_home_dir(), '.claude', '.credentials.json']);
-        const [ok, bytes] = GLib.file_get_contents(path);
-        if (!ok)
+        const file = Gio.File.new_for_path(path);
+        let bytes;
+        try {
+            [bytes] = await file.load_contents_async(this._cancellable);
+        } catch (e) {
             throw new Error('~/.claude/.credentials.json introuvable');
+        }
         const oauth = JSON.parse(new TextDecoder().decode(bytes)).claudeAiOauth;
         if (!oauth?.accessToken)
             throw new Error('Pas de token OAuth Claude');
@@ -190,7 +194,7 @@ class Indicator extends PanelMenu.Button {
         this._lastRefresh = now;
         this._busy = true;
         try {
-            const oauth = this._readToken();
+            const oauth = await this._readToken();
             if (oauth.expiresAt && oauth.expiresAt < Date.now())
                 throw new Error('Token expiré — lancez claude pour le renouveler');
 
@@ -284,6 +288,10 @@ class Indicator extends PanelMenu.Button {
         if (this._timer) {
             GLib.source_remove(this._timer);
             this._timer = null;
+        }
+        if (this._openStateId) {
+            this.menu.disconnect(this._openStateId);
+            this._openStateId = null;
         }
         this._cancellable.cancel();
         this._session.abort();
