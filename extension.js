@@ -134,7 +134,7 @@ class Indicator extends PanelMenu.Button {
 
         const box = new St.BoxLayout();
         box.add_child(new St.Icon({
-            gicon: Gio.icon_new_for_string(`${ext.path}/icons/claude-symbolic.svg`),
+            gicon: Gio.icon_new_for_string(`${ext.path}/icons/usage-symbolic.svg`),
             style_class: 'system-status-icon',
         }));
         this._summary = new St.BoxLayout({
